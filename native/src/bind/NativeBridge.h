@@ -15,17 +15,17 @@ extern jmethodID nb_fswrite;
 
 void nfsfwrite(
         JNIEnv *,
-        _In_reads_bytes_(_ElementSize * _ElementCount) void const *_Buffer,
-        _In_                                           size_t _ElementSize,
-        _In_                                           size_t _ElementCount,
+        void const *_Buffer,
+        size_t _ElementSize,
+        size_t _ElementCount,
         jobject stream
 );
 
 size_t nfsfread(
         JNIEnv *,
-        _Out_writes_bytes_(_ElementSize * _ElementCount) void *_Buffer,
-        _In_                                             size_t _ElementSize,
-        _In_                                             size_t _ElementCount,
+        void *_Buffer,
+        size_t _ElementSize,
+        size_t _ElementCount,
         jobject stream
 );
 

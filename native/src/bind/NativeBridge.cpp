@@ -42,7 +42,6 @@ static jclass nb_CoderException;
 static jfieldID nb_DEB;
 static jmethodID nb_fread;
 static jmethodID nb_fswrite;
-static JNIEnv *globalJniEnv;
 
 bool isDebug(JNIEnv *env) {
     return env->GetStaticBooleanField(nb_NativeBridge, nb_DEB);
@@ -55,7 +54,6 @@ void coderException(JNIEnv *env, const char *msg) {
 }
 
 void sys_initialize_NativeBridge(JNIEnv *env) {
-    globalJniEnv = env;
     auto NativeBridgeC = env->FindClass("io/github/kasukusakura/silkcodec/NativeBridge");
     nb_NativeBridge = NativeBridgeC;
     if (NativeBridgeC == NULL) return;
@@ -68,9 +66,9 @@ void sys_initialize_NativeBridge(JNIEnv *env) {
 // static void fswrite(long buffer, int unit, long length, OutputStream stream)
 void nfsfwrite(
         JNIEnv *env,
-        _In_reads_bytes_(_ElementSize * _ElementCount) void const *_Buffer,
-        _In_                                           size_t _ElementSize,
-        _In_                                           size_t _ElementCount,
+        void const *_Buffer,
+        size_t _ElementSize,
+        size_t _ElementCount,
         jobject stream
 ) {
     env->CallStaticVoidMethod(
@@ -83,12 +81,12 @@ void nfsfwrite(
 // static long fread(long buffer, int unit, long length, InputStream in)
 size_t nfsfread(
         JNIEnv *env,
-        _Out_writes_bytes_(_ElementSize * _ElementCount) void *_Buffer,
-        _In_                                             size_t _ElementSize,
-        _In_                                             size_t _ElementCount,
+        void *_Buffer,
+        size_t _ElementSize,
+        size_t _ElementCount,
         jobject stream
 ) {
-    return (size_t) globalJniEnv->CallStaticLongMethod(
+    return (size_t) env->CallStaticLongMethod(
             getClass(nb_fread),
             nb_fread,
             (jlong) _Buffer,
