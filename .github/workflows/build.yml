@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          ava-version: '16'
+          java-version: '16'
       - name: Chmod scripts
         run: |
           chmod +x gradlew
@@ -52,7 +52,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          ava-version: '16'
+          java-version: '16'
       - name: Chmod scripts
         run: |
           chmod +x gradlew
@@ -83,7 +83,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          ava-version: '16'
+          java-version: '16'
       - name: Chmod scripts
         run: |
           chmod +x gradlew
@@ -108,10 +108,11 @@ jobs:
     if: "${{ github.event_name == 'release' }}"
     steps:
       - uses: actions/checkout@v2
-      - name: Setup JDK 8
-        uses: actions/setup-java@v1
+      - name: Setup JDK 16
+        uses: actions/setup-java@v2
         with:
-          java-version: 8
+          distribution: 'zulu'
+          java-version: '16'
       - name: pre setup
         run: |
           chmod +x gradlew
