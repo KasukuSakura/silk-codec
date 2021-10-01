@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+
+allprojects {
+    group 'io.github.kasukusakura'
+    version '0.0.1'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'io.github.karlatemp:unsafe-accessor:1.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation fileTree('tm')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.create('packNativeLibs')
+
