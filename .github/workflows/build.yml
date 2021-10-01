@@ -70,8 +70,6 @@ jobs:
           name: macos
           path: |
             native/cmake-build-release/bin
-      - name: RunNative
-        run: ./gradlew runCiTest
 
   build-jars:
     runs-on: ubuntu-latest
