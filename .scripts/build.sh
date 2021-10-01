@@ -13,8 +13,13 @@ ecode=$?
 
 mkdir bin
 
-cp *.dll bin
-cp *.so bin
-cp *.dylib bin
+ls -la
+
+cp "silk.dll" bin
+cp "silk.so" bin
+cp "silk.dylib" bin
+
+cp "pcm_to_silk.exe" bin
+cp "pcm_to_silk" bin
 
 exit $ecode
