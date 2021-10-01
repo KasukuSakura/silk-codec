@@ -121,6 +121,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: temp/artifacts
+      - run: find .
       - name: Do Upload
         run: ./gradlew :ci-release-helper:uploadReleaseAssets
         env:

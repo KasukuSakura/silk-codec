@@ -60,7 +60,8 @@ void SilkerCoder_encode(
     /* Add Silk header to stream */
     {
         if (tencent) {
-            static const char Tencent_break[] = "\u0002";
+            static char Tencent_break[1];
+            Tencent_break[0] = (char) 2;
             COS.fwrite(env, Tencent_break, sizeof(char), strlen(Tencent_break), dst);
 
             if (COS.ExceptionCheck(env)) return;
