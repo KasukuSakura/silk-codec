@@ -7,6 +7,7 @@ import java.io.OutputStream;
 @SuppressWarnings({"UnusedReturnValue", "SameParameterValue"})
 class NativeBridge {
     static boolean DEB = false;
+    static Throwable it;
 
     private static final ThreadLocal<byte[]> TMPBUF = ThreadLocal.withInitial(() -> new byte[81920]);
 
@@ -14,13 +15,15 @@ class NativeBridge {
 
     static native void memcpy(byte[] src, int offset, int size, long address);
 
+    static native void noop();
+
     static native void initialize();
 
     static void initialize_pub() {
     }
 
     static {
-        initialize();
+        NativeLoader.initialize(null);
     }
 
     static long fread(long buffer, int unit, long length, InputStream in) throws IOException {

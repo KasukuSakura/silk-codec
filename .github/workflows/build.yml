@@ -1,6 +1,5 @@
 on:
-  push:
-    branches: [ main ]
+  push: {}
   pull_request: { }
   release:
     types:
@@ -74,36 +73,9 @@ jobs:
   build-jars:
     runs-on: ubuntu-latest
     name: Upload jars
-    if: '${{ false }}'
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup JDK 16
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: '16'
-      - name: Chmod scripts
-        run: |
-          chmod +x gradlew
-      - name: Clean caches
-        run: ./gradlew clean
-      - name: Build jars
-        run: >
-          ./gradlew
-          :pack-release:packAll
-          :pack-release:copyApi
-          :pack-release:randomObf
-      - name: Archive Jar artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: Jars
-          path: |
-            pack-release/build/libs
-
-  upload-release-assets:
-    runs-on: ubuntu-latest
-    needs: [ build-jars, build, build-macos ]
-    if: "${{ github.event_name == 'release' }}"
+    needs:
+      - build-macos
+      - build
     steps:
       - uses: actions/checkout@v2
       - name: Setup JDK 16
@@ -114,14 +86,32 @@ jobs:
       - name: pre setup
         run: |
           chmod +x gradlew
-          mkdir temp
-          mkdir temp/artifacts
+          mkdir tmp
+          mkdir tmp/artifacts
       - uses: actions/download-artifact@v2
         with:
-          path: temp/artifacts
-      - run: find .
-      - name: Do Upload
-        run: ./gradlew :ci-release-helper:uploadReleaseAssets
+          path: tmp/artifacts
+      - name: Chmod scripts
+        run: |
+          chmod +x gradlew
+      - name: Clean caches
+        run: ./gradlew clean
+      - name: Build jars
+        run: |
+          ./gradlew packNative
+          ./gradlew clean
+          ./gradlew build
+      - name: Archive Jar artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: all-in-one
+          path: |
+            build/libs
+            tmp/artifacts
+            tmp/exec
+      - name: Upload release assets
+        if: "${{ github.event_name == 'release' }}"
+        run: ./gradlew :ci-helper:uploadReleaseAssets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           POST_URL: ${{ github.event.release.upload_url }}

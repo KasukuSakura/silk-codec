@@ -1,1 +1,3 @@
 rootProject.name = 'silk-codec'
+
+include(':ci-helper')
