@@ -8,15 +8,15 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PipeStream {
+public class AudioToSilkCoder {
     private final Executor threadPool;
     private final int ffmpegBufferSize;
 
-    public PipeStream(Executor threadPool) {
+    public AudioToSilkCoder(Executor threadPool) {
         this(threadPool, 204800);
     }
 
-    public PipeStream(Executor threadPool, int ffmpegBufferSize) {
+    public AudioToSilkCoder(Executor threadPool, int ffmpegBufferSize) {
         this.threadPool = Objects.requireNonNull(threadPool, "threadPool");
         this.ffmpegBufferSize = ffmpegBufferSize;
     }
@@ -34,7 +34,7 @@ public class PipeStream {
                         process.getOutputStream().close();
                         stdin.close();
                         if (NativeBridge.DEB) {
-                            System.out.println("[PipeStream] stdin completed");
+                            System.out.println("[AudioToSilkCoder] stdin completed");
                         }
                     } catch (Throwable throwable) {
                         errorLog(throwable);
@@ -48,7 +48,7 @@ public class PipeStream {
                 try {
                     IOKit.transferTo(process.getInputStream(), $$tm_pin_trans, true);
                     if (NativeBridge.DEB) {
-                        System.out.println("[PipeStream] pcm completed");
+                        System.out.println("[AudioToSilkCoder] pcm completed");
                     }
                     $$tm_pin_trans.close();
                 } catch (Throwable throwable) {
