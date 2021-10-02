@@ -81,6 +81,7 @@ publishing {
             publication.pom {
                 name = 'Silk codec'
                 url = 'https://github.com/KasukuSakura/silk-codec'
+                description = 'silk codec'
                 licenses {
                     license {
                         name = 'Apache 2.0 License'
