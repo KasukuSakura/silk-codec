@@ -60,6 +60,9 @@ public class NativeLoader {
         for (String platform : new String[]{
                 "linux-x64",
                 "linux-arm64",
+                "android-x86",
+                "android-x86_64",
+                "android-arm64",
         }) {
             String libpath = "natives/" + platform + "/silk.so";
             String fname = "silk-" + platform + ".so";
