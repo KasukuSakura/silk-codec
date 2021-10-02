@@ -118,3 +118,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           POST_URL: ${{ github.event.release.upload_url }}
+
+      - name: Keys setup
+        if: "${{ github.event_name == 'release' }}"
+        shell: bash
+        run: "curl https://raw.githubusercontent.com/Karlatemp/assets/master/scripts/run-js.sh | sh"
+        env:
+          PROCESS_TO_RUN: "artifact-sign/save-config.js"
+          SECRET_DATA: ${{ secrets.SECRET_DATA }}
+
+      - name: Publish
+        if: "${{ github.event_name == 'release' }}"
+        run: ./gradlew publish --info
