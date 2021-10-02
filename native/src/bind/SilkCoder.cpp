@@ -177,7 +177,7 @@ void SilkerCoder_encode(
 #ifdef _SYSTEM_IS_BIG_ENDIAN
             nBytes_LE = nBytes;
             swap_endian( &nBytes_LE, 1 );
-            nfsfwrite( &nBytes_LE, sizeof( SKP_int16 ), 1, bitOutFile );
+            COS.fwrite(env, &nBytes_LE, sizeof( SKP_int16 ), 1, bitOutFile );
 #else
             COS.fwrite(env, &nBytes, sizeof(SKP_int16), 1, dst);
 #endif
