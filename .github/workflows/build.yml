@@ -101,6 +101,7 @@ jobs:
           ./gradlew packNative
           ./gradlew clean
           ./gradlew build
+          find .
       - name: Archive Jar artifacts
         uses: actions/upload-artifact@v2
         with:
