@@ -21,7 +21,7 @@ cp "silk.dylib" bin
 
 cp "libsilk.dll" -T bin/silk.dll
 cp "libsilk.so" -T bin/silk.so
-cp "libsilk.dylib" -T bin/silk.dylib
+mv "libsilk.dylib" bin/silk.dylib
 
 cp "pcm_to_silk.exe" bin
 cp "pcm_to_silk" bin
