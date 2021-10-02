@@ -101,13 +101,14 @@ jobs:
           ./gradlew packNative
           ./gradlew clean
           ./gradlew build
-          find .
       - name: Archive Jar artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: jars
+          name: all-in-one
           path: |
             build/libs
+            tmp/artifacts
+            tmp/exec
       - name: Upload release assets
         if: "${{ github.event_name == 'release' }}"
         run: ./gradlew :ci-helper:uploadReleaseAssets
