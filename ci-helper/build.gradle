@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation(gradleApi())
+}
+
+tasks.create('packNative', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    mainClass.set('ci.PNative')
+    workingDir(rootProject.projectDir)
+}
+
+tasks.create('uploadReleaseAssets', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    mainClass.set('ci.UploadArtifacts')
+
+    workingDir(rootProject.projectDir)
+
+    args(rootProject.version, String.valueOf(System.getenv("POST_URL")))
+}

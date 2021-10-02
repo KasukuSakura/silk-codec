@@ -1,6 +1,16 @@
 /.gradle
-/build
+build
 /resources
 /tm
 hs_err*.log
 .idea
+/tmp
+
+/src/main/resources/io/github/kasukusakura/silkcodec/natives
+/src/test/java
+
+*.silk
+*.mp3
+*.pcm
+*.exe
+

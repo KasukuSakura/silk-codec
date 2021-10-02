@@ -37,6 +37,14 @@ JNIEXPORT void JNICALL Java_io_github_kasukusakura_silkcodec_NativeBridge_initia
     sys_initialize_Jvmti(env);
 }
 
+/*
+ * Class:     io_github_kasukusakura_silkcodec_NativeBridge
+ * Method:    noop
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_io_github_kasukusakura_silkcodec_NativeBridge_noop
+        (JNIEnv *, jclass) {}
+
 static jclass nb_NativeBridge;
 static jclass nb_CoderException;
 static jfieldID nb_DEB;
