@@ -17,6 +17,7 @@ A library for convert PCM to tencent silk files.
 - Android x86
 - Android x86_64
 - Android arm64
+- Mac OS
 
 ## Usage
 
