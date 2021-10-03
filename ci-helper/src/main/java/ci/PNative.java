@@ -38,7 +38,7 @@ public class PNative {
                 }
             }
             for (var execs : new String[]{
-                    "pcm_to_silk"
+                    "silk_codec",
             }) {
                 cp(
                         new File(platform, execs),
