@@ -30,9 +30,9 @@ public class AudioToSilkCoder {
             if (stdin != null) {
                 threadPool.execute(() -> {
                     try {
-                        IOKit.transferTo(stdin, process.getOutputStream());
+                        IOKit.transferTo(stdin, process.getOutputStream(), true);
                         process.getOutputStream().close();
-                        stdin.close();
+                        // stdin.close();
                         if (NativeBridge.DEB) {
                             System.out.println("[AudioToSilkCoder] stdin completed");
                         }
@@ -82,6 +82,18 @@ public class AudioToSilkCoder {
             if (hz == 0) {
                 throw new IOException("Cannot find Hz");
             }
+            threadPool.execute(() -> {
+                try {
+                    // drop error input
+                    while (true) {
+                        String nl = bf.readLine();
+                        if (nl == null) break;
+                        cmdLine(nl);
+                    }
+                } catch (Throwable throwable) {
+                    errorLog(throwable);
+                }
+            });
             try {
                 SilkCoder.encode(processIn, output, hz);
                 if (NativeBridge.DEB) {
