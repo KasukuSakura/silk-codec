@@ -43,6 +43,8 @@ Output #0, s16le, to 'pipe:':
 
 ### Java
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kasukusakura/silk-codec.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.github.kasukusakura%22%20AND%20a:%22silk-codec%22)
+
 Jar was published as `io.github.kasukusakura:silk-codec`
 
 ```java
