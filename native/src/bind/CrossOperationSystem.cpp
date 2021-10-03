@@ -22,6 +22,7 @@ CrossOperationSystem COS_NATIVE_FILE_SYSTEM = {
         },
         [](void **, auto msg) {
             std::cerr << msg << std::endl;
+            exit(1);
         },
         [](void **) { return false; },
 };

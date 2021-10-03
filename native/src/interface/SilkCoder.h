@@ -19,4 +19,17 @@ void SilkerCoder_encode(
         int bitRate
 );
 
+void SilkCoder_decode(
+        CrossOperationSystem COS,
+        void **env,
+        void **source,
+        void **dest,
+
+        bool strict,
+        bool debug,
+
+        int fs_hz,
+        int loss
+);
+
 #endif //NATIVE_SILKCODER_H

@@ -27,7 +27,14 @@ public class NativeLoader {
 
     private static void write(String res, File f, String name) throws Throwable {
         f = new File(f, name);
-        if (f.exists()) return;
+        if (f.exists()) {
+            try (InputStream is = NativeLoader.class.getResourceAsStream(res);
+                 FileInputStream fs = new FileInputStream(f);
+            ) {
+                if (is == null) throw new InternalError("Resource `" + res + "` not found");
+                if (IOKit.isEq(is, fs)) return;
+            }
+        }
         try (InputStream is = NativeLoader.class.getResourceAsStream(res);
              OutputStream fo = new BufferedOutputStream(new FileOutputStream(f));
         ) {

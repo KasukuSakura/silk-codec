@@ -271,3 +271,413 @@ JNIEXPORT void JNICALL Java_io_github_kasukusakura_silkcodec_SilkCoder_encode(
             bitRate
     );
 }
+
+
+/* Seed for the random number generator, which is used for simulating packet loss */
+static SKP_int32 rand_seed = 1;
+
+
+void SilkCoder_decode(
+        CrossOperationSystem COS,
+        void **env,
+        void **source,
+        void **dest,
+        bool strict,
+        bool debug,
+        int fs_hz,
+        int loss
+) {
+    unsigned long tottime, starttime;
+    size_t counter;
+    SKP_int32 totPackets, i, k;
+    SKP_int16 ret, len, tot_len;
+    SKP_int16 nBytes;
+    SKP_uint8 payload[MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES * (MAX_LBRR_DELAY + 1)];
+    SKP_uint8 *payloadEnd = NULL, *payloadToDec = NULL;
+    SKP_uint8 FECpayload[MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES], *payloadPtr;
+    SKP_int16 nBytesFEC;
+    SKP_int16 nBytesPerPacket[MAX_LBRR_DELAY + 1], totBytes;
+    SKP_int16 out[((FRAME_LENGTH_MS * MAX_API_FS_KHZ) << 1) * MAX_INPUT_FRAMES], *outPtr;
+    SKP_int32 packetSize_ms = 0, API_Fs_Hz = 0;
+    SKP_int32 decSizeBytes;
+    void *psDec;
+    SKP_float loss_prob;
+    SKP_int32 frames, lost, quiet;
+    SKP_SILK_SDK_DecControlStruct DecControl;
+
+
+    /* default settings */
+
+    loss_prob = 0.0f;
+
+
+    loss_prob = loss;
+    API_Fs_Hz = fs_hz;
+
+
+    /* Check Silk header */
+    {
+        char header_buf[50];
+        COS.fread(env, header_buf, sizeof(char), 1, source);
+        header_buf[strlen("")] = '\0'; /* Terminate with a null character */
+        if (strcmp(header_buf, "") != 0) {
+            counter = COS.fread(env, header_buf, sizeof(char), strlen("!SILK_V3"), source);
+            header_buf[strlen("!SILK_V3")] = '\0'; /* Terminate with a null character */
+            if (strcmp(header_buf, "!SILK_V3") != 0) {
+                /* Non-equal strings */
+                char buf[50];
+                snprintf(buf, sizeof(buf), "Error: Wrong Header %s\n", header_buf);
+                COS.reportError(env, buf);
+                return;
+            }
+        } else {
+            counter = COS.fread(env, header_buf, sizeof(char), strlen("#!SILK_V3"), source);
+            header_buf[strlen("#!SILK_V3")] = '\0'; /* Terminate with a null character */
+            if (strcmp(header_buf, "#!SILK_V3") != 0) {
+                /* Non-equal strings */
+                char buf[50];
+                snprintf(buf, sizeof(buf), "Error: Wrong Header %s\n", header_buf);
+                COS.reportError(env, buf);
+                return;
+            }
+        }
+    }
+
+    /* Set the samplingrate that is requested for the output */
+    if (API_Fs_Hz == 0) {
+        DecControl.API_sampleRate = 24000;
+    } else {
+        DecControl.API_sampleRate = API_Fs_Hz;
+    }
+
+    /* Initialize to one frame per packet, for proper concealment before first packet arrives */
+    DecControl.framesPerPacket = 1;
+
+    /* Create decoder */
+    ret = SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
+    if (ret) {
+        char buf[100];
+        snprintf(buf, sizeof(buf), "SKP_Silk_SDK_Get_Decoder_Size returned %d", ret);
+        COS.reportError(env, buf);
+        return;
+    }
+    psDec = malloc(decSizeBytes);
+
+    /* Reset decoder */
+    ret = SKP_Silk_SDK_InitDecoder(psDec);
+    if (ret) {
+        char buf[100];
+        snprintf(buf, sizeof(buf), "SKP_Silk_InitDecoder returned %d", ret);
+        COS.reportError(env, buf);
+        return;
+    }
+
+    totPackets = 0;
+    tottime = 0;
+    payloadEnd = payload;
+
+    /* Simulate the jitter buffer holding MAX_FEC_DELAY packets */
+    for (i = 0; i < MAX_LBRR_DELAY; i++) {
+        /* Read payload size */
+        counter = COS.fread(env, &nBytes, sizeof(SKP_int16), 1, source);
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( &nBytes, 1 );
+#endif
+        /* Read payload */
+        counter = COS.fread(env, payloadEnd, sizeof(SKP_uint8), nBytes, source);
+
+        if ((SKP_int16) counter < nBytes) {
+            break;
+        }
+        nBytesPerPacket[i] = nBytes;
+        payloadEnd += nBytes;
+        totPackets++;
+    }
+
+    while (1) {
+        /* Read payload size */
+        counter = COS.fread(env, &nBytes, sizeof(SKP_int16), 1, source);
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( &nBytes, 1 );
+#endif
+        if (nBytes < 0 || counter < 1) {
+            break;
+        }
+
+        /* Read payload */
+        counter = COS.fread(env, payloadEnd, sizeof(SKP_uint8), nBytes, source);
+        if ((SKP_int16) counter < nBytes) {
+            break;
+        }
+
+        /* Simulate losses */
+        rand_seed = SKP_RAND(rand_seed);
+        if ((((float) ((rand_seed >> 16) + (1 << 15))) / 65535.0f >= (loss_prob / 100.0f)) && (counter > 0)) {
+            nBytesPerPacket[MAX_LBRR_DELAY] = nBytes;
+            payloadEnd += nBytes;
+        } else {
+            nBytesPerPacket[MAX_LBRR_DELAY] = 0;
+        }
+
+        if (nBytesPerPacket[0] == 0) {
+            /* Indicate lost packet */
+            lost = 1;
+
+            /* Packet loss. Search after FEC in next packets. Should be done in the jitter buffer */
+            payloadPtr = payload;
+            for (i = 0; i < MAX_LBRR_DELAY; i++) {
+                if (nBytesPerPacket[i + 1] > 0) {
+                    starttime = NBS_GetHighResolutionTime();
+                    SKP_Silk_SDK_search_for_LBRR(payloadPtr, nBytesPerPacket[i + 1], (i + 1), FECpayload, &nBytesFEC);
+                    tottime += NBS_GetHighResolutionTime() - starttime;
+                    if (nBytesFEC > 0) {
+                        payloadToDec = FECpayload;
+                        nBytes = nBytesFEC;
+                        lost = 0;
+                        break;
+                    }
+                }
+                payloadPtr += nBytesPerPacket[i + 1];
+            }
+        } else {
+            lost = 0;
+            nBytes = nBytesPerPacket[0];
+            payloadToDec = payload;
+        }
+
+        /* Silk decoder */
+        outPtr = out;
+        tot_len = 0;
+        starttime = NBS_GetHighResolutionTime();
+
+        if (lost == 0) {
+            /* No Loss: Decode all frames in the packet */
+            frames = 0;
+            do {
+                /* Decode 20 ms */
+                ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len);
+                if (ret && strict) {
+                    char buf[50];
+                    snprintf(buf, sizeof(buf), "SKP_Silk_SDK_Decode returned %d", ret);
+                    COS.reportError(env, buf);
+                    return;
+                }
+
+                frames++;
+                outPtr += len;
+                tot_len += len;
+                if (frames > MAX_INPUT_FRAMES) {
+                    /* Hack for corrupt stream that could generate too many frames */
+                    outPtr = out;
+                    tot_len = 0;
+                    frames = 0;
+                }
+                /* Until last 20 ms frame of packet has been decoded */
+            } while (DecControl.moreInternalDecoderFrames);
+        } else {
+            /* Loss: Decode enough frames to cover one packet duration */
+            for (i = 0; i < DecControl.framesPerPacket; i++) {
+                /* Generate 20 ms */
+                ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len);
+                if (ret && strict) {
+                    char buf[50];
+                    snprintf(buf, sizeof(buf), "SKP_Silk_Decode returned %d", ret);
+                    COS.reportError(env, buf);
+                    return;
+                }
+                outPtr += len;
+                tot_len += len;
+            }
+        }
+
+        packetSize_ms = tot_len / (DecControl.API_sampleRate / 1000);
+        tottime += NBS_GetHighResolutionTime() - starttime;
+        totPackets++;
+
+        /* Write output to file */
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( out, tot_len );
+#endif
+        COS.fwrite(env, out, sizeof(SKP_int16), tot_len, dest);
+
+        /* Update buffer */
+        totBytes = 0;
+        for (i = 0; i < MAX_LBRR_DELAY; i++) {
+            totBytes += nBytesPerPacket[i + 1];
+        }
+        /* Check if the received totBytes is valid */
+        if (totBytes < 0 || totBytes > sizeof(payload)) {
+            char buf[100];
+            snprintf(buf, sizeof(buf), "Packets decoded:             %d", totPackets);
+            COS.reportError(env, buf);
+            return;
+        }
+        SKP_memmove(payload, &payload[nBytesPerPacket[0]], totBytes * sizeof(SKP_uint8));
+        payloadEnd -= nBytesPerPacket[0];
+        SKP_memmove(nBytesPerPacket, &nBytesPerPacket[1], MAX_LBRR_DELAY * sizeof(SKP_int16));
+
+        if (debug && !quiet) {
+            fprintf(stderr, "\rPackets decoded:             %d", totPackets);
+        }
+    }
+
+    /* Empty the recieve buffer */
+    for (k = 0; k < MAX_LBRR_DELAY; k++) {
+        if (nBytesPerPacket[0] == 0) {
+            /* Indicate lost packet */
+            lost = 1;
+
+            /* Packet loss. Search after FEC in next packets. Should be done in the jitter buffer */
+            payloadPtr = payload;
+            for (i = 0; i < MAX_LBRR_DELAY; i++) {
+                if (nBytesPerPacket[i + 1] > 0) {
+                    starttime = NBS_GetHighResolutionTime();
+                    SKP_Silk_SDK_search_for_LBRR(payloadPtr, nBytesPerPacket[i + 1], (i + 1), FECpayload, &nBytesFEC);
+                    tottime += NBS_GetHighResolutionTime() - starttime;
+                    if (nBytesFEC > 0) {
+                        payloadToDec = FECpayload;
+                        nBytes = nBytesFEC;
+                        lost = 0;
+                        break;
+                    }
+                }
+                payloadPtr += nBytesPerPacket[i + 1];
+            }
+        } else {
+            lost = 0;
+            nBytes = nBytesPerPacket[0];
+            payloadToDec = payload;
+        }
+
+        /* Silk decoder */
+        outPtr = out;
+        tot_len = 0;
+        starttime = NBS_GetHighResolutionTime();
+
+        if (lost == 0) {
+            /* No loss: Decode all frames in the packet */
+            frames = 0;
+            do {
+                /* Decode 20 ms */
+                ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len);
+                if (ret && strict) {
+                    char buf[50];
+                    snprintf(buf, sizeof(buf), "SKP_Silk_SDK_Decode returned %d", ret);
+                    COS.reportError(env, buf);
+                    return;
+                }
+
+                frames++;
+                outPtr += len;
+                tot_len += len;
+                if (frames > MAX_INPUT_FRAMES) {
+                    /* Hack for corrupt stream that could generate too many frames */
+                    outPtr = out;
+                    tot_len = 0;
+                    frames = 0;
+                }
+                /* Until last 20 ms frame of packet has been decoded */
+            } while (DecControl.moreInternalDecoderFrames);
+        } else {
+            /* Loss: Decode enough frames to cover one packet duration */
+
+            /* Generate 20 ms */
+            for (i = 0; i < DecControl.framesPerPacket; i++) {
+                ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len);
+                if (ret && strict) {
+                    char buf[50];
+                    snprintf(buf, sizeof(buf), "SKP_Silk_Decode returned %d", ret);
+                    COS.reportError(env, buf);
+                    return;
+                }
+                outPtr += len;
+                tot_len += len;
+            }
+        }
+
+        packetSize_ms = tot_len / (DecControl.API_sampleRate / 1000);
+        tottime += NBS_GetHighResolutionTime() - starttime;
+        totPackets++;
+
+        /* Write output to file */
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( out, tot_len );
+#endif
+        COS.fwrite(env, out, sizeof(SKP_int16), tot_len, dest);
+
+        /* Update Buffer */
+        totBytes = 0;
+        for (i = 0; i < MAX_LBRR_DELAY; i++) {
+            totBytes += nBytesPerPacket[i + 1];
+        }
+
+        /* Check if the received totBytes is valid */
+        if (totBytes < 0 || totBytes > sizeof(payload)) {
+            if (debug) {
+                fprintf(stderr, "\rPackets decoded:              %d", totPackets);
+            }
+            return;
+        }
+
+        SKP_memmove(payload, &payload[nBytesPerPacket[0]], totBytes * sizeof(SKP_uint8));
+        payloadEnd -= nBytesPerPacket[0];
+        SKP_memmove(nBytesPerPacket, &nBytesPerPacket[1], MAX_LBRR_DELAY * sizeof(SKP_int16));
+
+        if (debug && !quiet) {
+            fprintf(stderr, "\rPackets decoded:              %d", totPackets);
+        }
+    }
+
+    if (debug && !quiet) {
+        printf("\nDecoding Finished \n");
+    }
+
+    /* Free decoder */
+    free(psDec);
+
+    /* Close files */
+//    fclose(speechOutFile);
+//    fclose(bitInFile);
+
+    if (debug) {
+        auto filetime = totPackets * 1e-3 * packetSize_ms;
+        fprintf(stderr, "\nFile length:                 %.3f s", filetime);
+        fprintf(stderr, "\nTime for decoding:           %.3f s (%.3f%% of realtime)",
+                1e-6 * tottime,
+                1e-4 * tottime / filetime
+        );
+        fprintf(stderr, "\n\n");
+    }
+
+}
+
+/*
+ * Class:     io_github_kasukusakura_silkcodec_SilkCoder
+ * Method:    decode
+ * Signature: (Ljava/io/InputStream;Ljava/io/OutputStream;ZII)V
+ */
+JNIEXPORT void JNICALL Java_io_github_kasukusakura_silkcodec_SilkCoder_decode(
+        JNIEnv *env, jclass,
+        jobject src, jobject dst,
+        jboolean strict, jint fs_Hz,
+        jint loss
+) {
+    if (requireNonNull(env, src, "src")) return;
+    if (requireNonNull(env, dst, "dst")) return;
+    if (fs_Hz == 0) {
+        coderException(env, "fs_Hz: 0");
+        return;
+    }
+    auto debug = isDebug(env);
+
+    SilkCoder_decode(
+            JVM_IO_SYSTEM(),
+            (void **) env,
+            (void **) src,
+            (void **) dst,
+            (bool) strict,
+            debug,
+            (int) fs_Hz,
+            (int) loss
+    );
+}

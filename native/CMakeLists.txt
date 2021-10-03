@@ -28,16 +28,17 @@ include_directories(../build/generated/sources/headers/java/main/)
 
 include_directories(src/interface)
 include_directories(src/silk)
+include_directories(src/cxxopts/include)
 
 AUX_SOURCE_DIRECTORY(src/silk SRC_DIR)
 AUX_SOURCE_DIRECTORY(src/bind SRC_DIR)
 
-AUX_SOURCE_DIRECTORY(src/pcm_to_silk PCM_TO_SILK)
+AUX_SOURCE_DIRECTORY(src/silk_codec SILK_CODEC_EXEC)
 
 set(CMAKE_ANDROID_ARM_MODE ON)
 set(CMAKE_ANDROID_ARM_NEON ON)
 set(CMAKE_ANDROID_STL_TYPE system)
 
 add_library(silk SHARED ${SRC_DIR})
-add_executable(pcm_to_silk ${SRC_DIR} ${PCM_TO_SILK})
+add_executable(silk_codec ${SRC_DIR} ${SILK_CODEC_EXEC})
 

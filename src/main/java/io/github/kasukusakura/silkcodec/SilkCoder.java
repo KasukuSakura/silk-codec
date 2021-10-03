@@ -9,6 +9,9 @@ public class SilkCoder {
         NativeBridge.initialize_pub();
     }
 
+    /**
+     * Encode PCM (pcm_s16le) to Silk v3
+     */
     public static native void encode(
             InputStream source,
             OutputStream dest,
@@ -60,4 +63,19 @@ public class SilkCoder {
         encode(source, dest, sampleRate, 24000);
     }
 
+    /**
+     * Decode SilkV3 to PCM (pcm_s16le)
+     */
+    public static native void decode(
+            InputStream src, OutputStream dst,
+            boolean strict,
+            int simpleRate,
+            int loss
+    ) throws IOException;
+
+    public static void decode(
+            InputStream src, OutputStream dst
+    ) throws IOException {
+        decode(src, dst, true, 24000, 0);
+    }
 }

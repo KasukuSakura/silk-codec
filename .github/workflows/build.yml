@@ -23,6 +23,8 @@ jobs:
           - android-arm64
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Setup JDK 16
         uses: actions/setup-java@v2
         with:
@@ -50,6 +52,8 @@ jobs:
     name: Build on MacOS
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Setup JDK 16
         uses: actions/setup-java@v2
         with:
@@ -81,6 +85,8 @@ jobs:
       - build
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Setup JDK 16
         uses: actions/setup-java@v2
         with:

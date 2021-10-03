@@ -25,7 +25,7 @@ A library for convert PCM to tencent silk files.
 
 ```shell
 ffmpeg -y -i $INPUT -acodec pcm_s16le -f s16le -ac 1 tmp.pcm
-pcm_to_silk tmp.pcm $HZ out.silk
+silk_codec pts -i tmp.pcm -s $HZ -o out.silk
 ```
 
 ```text

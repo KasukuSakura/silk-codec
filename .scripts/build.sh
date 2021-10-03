@@ -7,7 +7,7 @@ cd cmake-build-release || exit 1
 cmake -DCMAKE_BUILD_TYPE=Release "-DCMAKE_CACHEFILE_DIR=$PWD" "-Dcross_triple=$CROSS" ..
 
 cmake --build . --target silk -- -j 3
-cmake --build . --target pcm_to_silk -- -j 3
+cmake --build . --target silk_codec -- -j 3
 
 ecode=$?
 
@@ -23,8 +23,8 @@ cp "libsilk.dll" -T bin/silk.dll
 cp "libsilk.so" -T bin/silk.so
 mv "libsilk.dylib" bin/silk.dylib
 
-cp "pcm_to_silk.exe" bin
-cp "pcm_to_silk" bin
+cp "silk_codec.exe" bin
+cp "silk_codec" bin
 
 ls -la
 
