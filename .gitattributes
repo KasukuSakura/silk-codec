@@ -1,0 +1,8 @@
+* text=auto
+* eol=lf
+*.png binary
+*.jpg binary
+*.jar binary
+
+
+native/src/silk/** linguist-vendored
