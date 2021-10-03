@@ -6,7 +6,7 @@ A library for convert PCM to tencent silk files.
 
 - [X] Convert PCM to silk
 - [X] Convert audio to silk (FFMPEG required)
-- [ ] Convert silk to PCM
+- [X] Convert silk to PCM
 
 ## Platform supported
 
