@@ -25,6 +25,19 @@ void SilkerCoder_encode(
         int bitRate
 ) {
 
+    if (debug) {
+        std::cout << "[SilkCoder] Encode: tx=" << tencent
+                  << ", strict=" << strict
+                  << ", fs Hz=" << fs_Hz
+                  << ", max sample rate=" << maxInternalSampleRate
+                  << ", packet size=" << packetSize
+                  << ", band-fec=" << useInBandFEC
+                  << ", DTX=" << useDTX
+                  << ", complexity=" << complexity
+                  << ", bit-rate=" << bitRate
+                  << std::endl;
+    }
+
     unsigned long tottime, starttime;
     double filetime;
     size_t counter;
@@ -260,7 +273,7 @@ JNIEXPORT void JNICALL Java_io_github_kasukusakura_silkcodec_SilkCoder_encode(
             reinterpret_cast<void **>(env),
             reinterpret_cast<void **>(src),
             reinterpret_cast<void **>(dst),
-            tencent, strict, debug,
+            tencent != 0, strict != 0, debug != 0,
             fs_Hz,
             maxInternalSampleRate,
             packetSize,
