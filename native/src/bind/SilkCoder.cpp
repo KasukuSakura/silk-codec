@@ -73,9 +73,12 @@ void SilkerCoder_encode(
     /* Add Silk header to stream */
     {
         if (tencent) {
+            if (debug) {
+                std::cout << "[SilkCoder] Writing TX Silk-v3 Header" << std::endl;
+            }
             static char Tencent_break[1];
             Tencent_break[0] = (char) 2;
-            COS.fwrite(env, Tencent_break, sizeof(char), strlen(Tencent_break), dst);
+            COS.fwrite(env, Tencent_break, sizeof(char), 1, dst);
 
             if (COS.ExceptionCheck(env)) return;
         }
