@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.12)
 project(native)
 set(CMAKE_CXX_STANDARD 14)
 
+IF (WIN32)
+    MESSAGE("Windows with ${CMAKE_CXX_COMPILER_ID}")
+
+    SET(NO_MINGW_LIB_FLAGS "-static-libgcc -static-libstdc++ -static")
+
+    IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${NO_MINGW_LIB_FLAGS}")
+        SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} ${NO_MINGW_LIB_FLAGS}")
+    ENDIF()
+    MESSAGE("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+    MESSAGE("CMAKE_C  _FLAGS: ${CMAKE_C_FLAGS}")
+ENDIF()
 
 include_directories(jni_include/common)
 IF (WIN32)
