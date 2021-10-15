@@ -12,12 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Build on ${{ matrix.cross }}
     strategy:
+      fail-fast: false
       matrix:
         cross:
           - linux-x64
           - linux-arm64
-          - windows-shared-x86
-          - windows-shared-x64
+          - windows-static-x86
+          - windows-static-x64
           - android-x86
           - android-x86_64
           - android-arm64

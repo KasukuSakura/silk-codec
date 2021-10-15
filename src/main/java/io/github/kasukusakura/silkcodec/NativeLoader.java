@@ -93,7 +93,7 @@ public class NativeLoader {
         String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         String arch = System.getProperty("os.arch");
         if (os.startsWith("windows")) {
-            String libpath = "natives/windows-shared-x" + (
+            String libpath = "natives/windows-static-x" + (
                     arch.equals("amd64") ? "64" : "86"
             ) + "/silk.dll";
             write(libpath, tmpdir, "silk.dll");

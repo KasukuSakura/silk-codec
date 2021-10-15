@@ -52,5 +52,6 @@ set(CMAKE_ANDROID_ARM_NEON ON)
 set(CMAKE_ANDROID_STL_TYPE system)
 
 add_library(silk SHARED ${SRC_DIR})
+target_link_libraries(silk "--verbose")
 add_executable(silk_codec ${SRC_DIR} ${SILK_CODEC_EXEC})
 
