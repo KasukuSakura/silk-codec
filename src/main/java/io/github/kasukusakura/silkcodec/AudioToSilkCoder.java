@@ -99,8 +99,8 @@ public class AudioToSilkCoder {
                 if (NativeBridge.DEB) {
                     System.out.println("[P-INT] shutdown");
                 }
-            } catch (Throwable throwable) {
-                errorLog(throwable);
+            } catch (CoderException exception) {
+                throw new IOException("Cannot encode Hz: " + hz, exception);
             }
         } catch (Throwable throwable) {
             try {
@@ -115,6 +115,7 @@ public class AudioToSilkCoder {
                     throwable.addSuppressed(ioe);
                 }
             }
+            throw throwable;
         }
     }
 
