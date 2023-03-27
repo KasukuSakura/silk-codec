@@ -82,6 +82,11 @@ public class AudioToSilkCoder {
             if (hz == 0) {
                 throw new IOException("Cannot find Hz");
             }
+            if (hz == 22050) {
+                if (!Boolean.getBoolean("silk-codec.rate-check-ignore")) {
+                    throw new IllegalArgumentException("22050 Hz is not supported. If you need to ignore this check, please set `silk-codec.rate-check-ignore=true`");
+                }
+            }
             threadPool.execute(() -> {
                 try {
                     // drop error input
