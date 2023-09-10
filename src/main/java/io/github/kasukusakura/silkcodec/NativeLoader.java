@@ -86,8 +86,12 @@ public class NativeLoader {
             }
             String nt = settings.getProperty("native.path");
             if (nt != null) {
-                System.load(nt);
-                return;
+                try {
+                    System.load(nt);
+                    return;
+                } catch (UnsatisfiedLinkError ignored) {
+                    // 忽略 native.path 不可读 (文件有迁移或者其他情况时)
+                }
             }
         }
         String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
